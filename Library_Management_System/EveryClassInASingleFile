@@ -1,0 +1,243 @@
+import java.util.*;
+
+// Enum to represent book status
+enum BookStatus {
+    AVAILABLE,
+    UNAVAILABLE
+}
+
+// Book class
+class Book {
+    private String id;
+    private String title;
+    private String author;
+    private BookStatus bookStatus;
+
+    public Book(String id, String title, String author) {
+        this.id = id;
+        this.title = title;
+        this.author = author;
+        this.bookStatus = BookStatus.AVAILABLE; // By default, the book is available
+    }
+
+    // Getters and Setters
+    public String getId() { return id; }
+    public String getTitle() { return title; }
+    public String getAuthor() { return author; }
+    public BookStatus getBookStatus() { return bookStatus; }
+    public void setBookStatus(BookStatus bookStatus) { this.bookStatus = bookStatus; }
+
+    @Override
+    public String toString() {
+        return "Book{" +
+                "id='" + id + '\'' +
+                ", title='" + title + '\'' +
+                ", author='" + author + '\'' +
+                ", bookStatus=" + bookStatus +
+                '}';
+    }
+}
+
+// User class
+class User {
+    private String id;
+    private String name;
+    private List<Book> borrowedBooks;
+
+    public User(String id, String name) {
+        this.id = id;
+        this.name = name;
+        this.borrowedBooks = new ArrayList<>();
+    }
+
+    // Getters
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public List<Book> getBorrowedBooks() { return borrowedBooks; }
+
+    // Borrow a book
+    public void borrowBook(Book book) {
+        borrowedBooks.add(book);
+    }
+
+    // Return a book
+    public void returnBook(Book book) {
+        borrowedBooks.remove(book);
+    }
+}
+
+// Singleton LibraryManagement class
+class LibraryManagement {
+    private static LibraryManagement instance;
+    private Map<String, Book> books; // Store books by ID for efficient lookup
+
+    private LibraryManagement() {
+        this.books = new HashMap<>();
+    }
+
+    public static LibraryManagement getInstance() {
+        if (instance == null) {
+            instance = new LibraryManagement();
+        }
+        return instance;
+    }
+
+    // Add a book
+    public void addBook(Book book) {
+        books.put(book.getId(), book);
+        System.out.println("Successfully added book: " + book.getTitle());
+    }
+
+    // Remove a book
+    public void removeBook(String bookId) {
+        Book book = books.remove(bookId);
+        if (book != null) {
+            System.out.println("Successfully removed book: " + book.getTitle());
+        } else {
+            System.out.println("Book not found.");
+        }
+    }
+
+    // Search for a book by title
+    public Book searchForBook(String title) {
+        for (Book book : books.values()) {
+            if (book.getTitle().equalsIgnoreCase(title)) {
+                return book;
+            }
+        }
+        return null;
+    }
+
+    // Display all books with their status
+    public void displayAllBooksWithStatus() {
+        for (Book book : books.values()) {
+            System.out.println(book.getTitle() + " - " + book.getBookStatus());
+        }
+    }
+
+    // Get a book by ID
+    public Book getBook(String bookId) {
+        return books.get(bookId);
+    }
+}
+
+// UserManagement class
+class UserManagement {
+    private Map<String, User> users; // Store users by ID for efficient lookup
+
+    public UserManagement() {
+        this.users = new HashMap<>();
+    }
+
+    // Add a user
+    public void addUser(User user) {
+        users.put(user.getId(), user);
+        System.out.println("Successfully added user: " + user.getName());
+    }
+
+    // Remove a user
+    public void removeUser(String userId) {
+        User user = users.remove(userId);
+        if (user != null) {
+            System.out.println("Successfully removed user: " + user.getName());
+        } else {
+            System.out.println("User not found.");
+        }
+    }
+
+    // Get a user by ID
+    public User getUser(String userId) {
+        return users.get(userId);
+    }
+}
+
+// TransactionManager class
+class TransactionManager {
+
+    // Borrow a book
+    public void borrowBook(User user, Book book) {
+        if (book == null || user == null) {
+            System.out.println("Invalid book or user.");
+            return;
+        }
+
+        if (book.getBookStatus() == BookStatus.AVAILABLE) {
+            book.setBookStatus(BookStatus.UNAVAILABLE);
+            user.borrowBook(book);
+            System.out.println(user.getName() + " borrowed " + book.getTitle() + " successfully.");
+        } else {
+            System.out.println("Book is not available to borrow.");
+        }
+    }
+
+    // Return a book
+    public void returnBook(User user, Book book) {
+        if (book == null || user == null) {
+            System.out.println("Invalid book or user.");
+            return;
+        }
+
+        if (user.getBorrowedBooks().contains(book)) {
+            book.setBookStatus(BookStatus.AVAILABLE);
+            user.returnBook(book);
+            System.out.println(user.getName() + " returned " + book.getTitle() + " successfully.");
+        } else {
+            System.out.println("This book was not borrowed by " + user.getName() + ".");
+        }
+    }
+}
+
+// Main class to demonstrate the system
+public class LibraryDemo {
+    public static void main(String[] args) {
+        // Get singleton instances
+        LibraryManagement library = LibraryManagement.getInstance();
+        UserManagement userManagement = new UserManagement();
+        TransactionManager transactionManager = new TransactionManager();
+
+        // Create books
+        Book book1 = new Book("257", "How to prepare well for LLD", "Kavya");
+        Book book2 = new Book("258", "How to cheer up your gf when she's upset", "Arvind");
+
+        // Create users
+        User user1 = new User("id1", "Sathya");
+        User user2 = new User("id2", "Sudha");
+
+        // Add books and users
+        library.addBook(book1);
+        library.addBook(book2);
+        userManagement.addUser(user1);
+        userManagement.addUser(user2);
+
+        // Display all books
+        library.displayAllBooksWithStatus();
+
+        // Borrow books
+        transactionManager.borrowBook(user1, book1);
+        transactionManager.borrowBook(user2, book1); // This should fail (book1 is already borrowed)
+
+        // Search for a book
+        Book searchedBook = library.searchForBook("How to forgive stupid people");
+        if (searchedBook != null) {
+            System.out.println("Book found: " + searchedBook.getTitle());
+        } else {
+            System.out.println("Book not found.");
+        }
+
+        // Display all books after borrowing
+        library.displayAllBooksWithStatus();
+
+        // Return a book
+        transactionManager.returnBook(user1, book1);
+        transactionManager.borrowBook(user2, book1); // This should succeed now
+
+        // Remove a user
+        userManagement.removeUser(user2.getId());
+
+        // Display borrowed books by user2
+        List<Book> borrowedBooks = user2.getBorrowedBooks();
+        for (Book book : borrowedBooks) {
+            System.out.println(book.toString());
+        }
+    }
+}
