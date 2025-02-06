@@ -1,0 +1,121 @@
+import java.util.ArrayList;
+import java.util.List;
+
+public class Song {
+    private String songName;
+    private String songArtist;
+    private int duration;
+
+    public Song(String songName, String songArtist, int duration) {
+        this.songName = songName;
+        this.songArtist = songArtist;
+        this.duration = duration;
+    }
+
+    public String getSongName() {
+        return songName;
+    }
+
+    public String getSongArtist() {
+        return songArtist;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+}
+import java.util.ArrayList;
+import java.util.List;
+
+public class Playlist {
+    private String name;
+    private List<Song> songs;
+
+    public Playlist(String name) {
+        this.name = name;
+        this.songs = new ArrayList<>();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public List<Song> getSongs() {
+        return songs;
+    }
+
+    public void addSong(Song song){
+        if (!songs.contains(song)) {
+            songs.add(song);
+        }
+    }
+    public void deleteSong(Song song){
+        if (songs.contains(song)){
+            songs.remove(song);
+        }
+        else{
+            throw new NullPointerException("Song is not present in the playlist");
+        }
+    }
+}
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class User {
+    private String name;
+    //private String status;-- if you want to add premium or free user
+    private List<Playlist> playlists;
+
+    public User(String name) {
+        this.name = name;
+        this.playlists=new ArrayList<>();
+    }
+    public Playlist createPlaylist(String name){
+        Playlist playlist= new Playlist(name);
+        playlists.add(playlist);
+        return playlist;
+    }
+    public void addSong(Playlist playlist, Song song){
+        if (!playlist.getSongs().contains(song)){
+            playlist.addSong(song);
+        }
+    }
+    public void searchSong(String query, List<Song> library) {
+        for (Song song : library) {
+            if (song.getSongName().contains(query)) {
+                System.out.println("Found: " + song.getSongName());
+            }
+        }
+    }
+}
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Spotify {
+    public static void main(String[] args) {
+        // Creating users and songs
+        User user1 = new User("Kavya");
+        Song song1 = new Song("Shape of You", "Ed Sheeran", 230);
+        Song song2 = new Song("Blinding Lights", "The Weeknd", 200);
+
+        // Adding songs to a playlist
+        Playlist playlist1 = user1.createPlaylist("Favorites");
+        playlist1.addSong(song1);
+        playlist1.addSong(song2);
+
+        // Creating a player
+        SongManager player = new SongManager();
+        player.play(song1);
+        player.pause();
+        player.skip();
+
+        // Searching for a song
+        List<Song> library = new ArrayList<>();
+        library.add(song1);
+        library.add(song2);
+        user1.searchSong("Shape", library);
+    }
+}
