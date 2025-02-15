@@ -120,13 +120,18 @@ class ExpenseService {
     private Map<String, Map<String, Integer>> balanceSheet = new HashMap<>();
 
     public void addExpense(String groupId, Expense expense) {
-        for (String user : expense.getSplitAmong()) {
-            if (!user.equals(expense.getPaidBy())) {
-                balanceSheet.putIfAbsent(user, new HashMap<>());
-                balanceSheet.putIfAbsent(expense.getPaidBy(), new HashMap<>());
+        for (String user : expense.getSplitAmong()) { //all users sharing the expense
+            if (!user.equals(expense.getPaidBy())) { //Skip the payer because they don't owe money to themselves.
+                balanceSheet.putIfAbsent(user, new HashMap<>());  //Ensure both users exist in balanceSheet.
+                balanceSheet.putIfAbsent(expense.getPaidBy(), new HashMap<>()); //Ensure both users exist in balanceSheet.
                 balanceSheet.get(user).put(expense.getPaidBy(),
                         balanceSheet.get(user).getOrDefault(expense.getPaidBy(), 0) + (expense.getAmount() / expense.getSplitAmong().size()));
+                /*
 
+                Update the debt of the current user (user) towards the payer (paidBy).
+                The user owes an equal share of the expense:
+                (Total Expense) ÷ (Total Users Splitting).  -- user who payed, gets money -- user who didnt, gets a minus
+                 */
                 balanceSheet.get(expense.getPaidBy()).put(user,
                         balanceSheet.get(expense.getPaidBy()).getOrDefault(user, 0) - (expense.getAmount() / expense.getSplitAmong().size()));
             }
