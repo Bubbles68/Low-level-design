@@ -1,51 +1,54 @@
 import java.util.*;
 
-public class User {
+class User {
     private String name;
     private String emailId;
-    private Set<String> groupIds; // Stores groups the user is part of
-    private Map<String, Double> balances; // Key: userEmail, Value: Amount owed (+) or to pay (-)
+    private Set<String> groupIds; // User can be in multiple groups
 
     public User(String emailId, String name) {
         this.emailId = emailId;
         this.name = name;
         this.groupIds = new HashSet<>();
-        this.balances = new HashMap<>();
     }
 
-    public String getName() {
-        return name;
-    }
+    public String getName() { return name; }
+    public String getEmailId() { return emailId; }
+    public Set<String> getGroupIds() { return groupIds; }
 
-    public String getEmailId() {
-        return emailId;
-    }
-
-    public Set<String> getGroupIds() {
-        return groupIds;
-    }
-
-    public Map<String, Double> getBalances() {
-        return balances;
-    }
-
-    public void addGroup(String groupId) {
+    public void joinGroup(String groupId) {
         groupIds.add(groupId);
     }
 
-    public void removeGroup(String groupId) {
+    public void leaveGroup(String groupId) {
         groupIds.remove(groupId);
     }
+}
 
-    public void updateBalance(String userEmail, double amount) {
-        balances.put(userEmail, balances.getOrDefault(userEmail, 0.0) + amount);
+class Expense {
+    private int amount;
+    private String description;
+    private String paidBy; // User ID of the payer
+    private List<String> splitAmong; // List of users involved
+    private Date timestamp;
+
+    public Expense(int amount, String description, String paidBy, List<String> splitAmong) {
+        this.amount = amount;
+        this.description = description;
+        this.paidBy = paidBy;
+        this.splitAmong = splitAmong;
+        this.timestamp = new Date();
     }
+
+    public int getAmount() { return amount; }
+    public String getDescription() { return description; }
+    public String getPaidBy() { return paidBy; }
+    public List<String> getSplitAmong() { return splitAmong; }
 }
 
 class Group {
     private String groupId;
     private String name;
-    private Set<User> users;
+    private Set<String> users; // Store user IDs
     private List<Expense> expenses;
 
     public Group(String groupId, String name) {
@@ -55,30 +58,17 @@ class Group {
         this.expenses = new ArrayList<>();
     }
 
-    public String getGroupId() {
-        return groupId;
+    public String getGroupId() { return groupId; }
+    public String getName() { return name; }
+    public Set<String> getUsers() { return users; }
+    public List<Expense> getExpenses() { return expenses; }
+
+    public void addUser(String userId) {
+        users.add(userId);
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public Set<User> getUsers() {
-        return users;
-    }
-
-    public List<Expense> getExpenses() {
-        return expenses;
-    }
-
-    public void addUser(User user) {
-        users.add(user);
-        user.addGroup(groupId);
-    }
-
-    public void removeUser(User user) {
-        users.remove(user);
-        user.removeGroup(groupId);
+    public void removeUser(String userId) {
+        users.remove(userId);
     }
 
     public void addExpense(Expense expense) {
@@ -86,126 +76,85 @@ class Group {
     }
 }
 
-class Expense {
-    private String expenseId;
-    private double amount;
-    private User paidBy;
-    private Map<User, Double> splitAmong;
+class UserService {
+    private Map<String, User> users = new HashMap<>();
 
-    public Expense(String expenseId, double amount, User paidBy, Map<User, Double> splitAmong) {
-        this.expenseId = expenseId;
-        this.amount = amount;
-        this.paidBy = paidBy;
-        this.splitAmong = splitAmong;
+    public void registerUser(String email, String name) {
+        if (!users.containsKey(email)) {
+            users.put(email, new User(email, name));
+        }
     }
 
-    public String getExpenseId() {
-        return expenseId;
-    }
-
-    public double getAmount() {
-        return amount;
-    }
-
-    public User getPaidBy() {
-        return paidBy;
-    }
-
-    public Map<User, Double> getSplitAmong() {
-        return splitAmong;
+    public User getUser(String email) {
+        return users.get(email);
     }
 }
 
-// Handles login/logout operations
-class AuthService {
-    private Map<String, User> usersDB = new HashMap<>();
-
-    public User login(String emailId, String name) {
-        return usersDB.computeIfAbsent(emailId, id -> new User(emailId, name));
-    }
-}
-
-// Manages groups
 class GroupService {
-    private Map<String, Group> groupDB = new HashMap<>();
+    private Map<String, Group> groups = new HashMap<>();
 
-    public Group createGroup(String groupId, String name) {
-        Group group = new Group(groupId, name);
-        groupDB.put(groupId, group);
-        return group;
-    }
-
-    public void addUserToGroup(String groupId, User user) {
-        Group group = groupDB.get(groupId);
-        if (group != null) {
-            group.addUser(user);
+    public void createGroup(String groupId, String name) {
+        if (!groups.containsKey(groupId)) {
+            groups.put(groupId, new Group(groupId, name));
         }
     }
 
-    public void removeUserFromGroup(String groupId, User user) {
-        Group group = groupDB.get(groupId);
-        if (group != null) {
-            group.removeUser(user);
+    public void addUserToGroup(String groupId, String userId) {
+        if (groups.containsKey(groupId)) {
+            groups.get(groupId).addUser(userId);
         }
+    }
+
+    public void removeUserFromGroup(String groupId, String userId) {
+        if (groups.containsKey(groupId)) {
+            groups.get(groupId).removeUser(userId);
+        }
+    }
+
+    public Group getGroup(String groupId) {
+        return groups.get(groupId);
     }
 }
 
-// Manages expenses
 class ExpenseService {
-    public void addExpense(Group group, User paidBy, double amount, Map<User, Double> splitAmong) {
-        Expense expense = new Expense(UUID.randomUUID().toString(), amount, paidBy, splitAmong);
-        group.addExpense(expense);
+    private Map<String, Map<String, Integer>> balanceSheet = new HashMap<>();
 
-        for (Map.Entry<User, Double> entry : splitAmong.entrySet()) {
-            User user = entry.getKey();
-            double share = entry.getValue();
-            user.updateBalance(paidBy.getEmailId(), -share);
-            paidBy.updateBalance(user.getEmailId(), share);
+    public void addExpense(String groupId, Expense expense) {
+        for (String user : expense.getSplitAmong()) {
+            if (!user.equals(expense.getPaidBy())) {
+                balanceSheet.putIfAbsent(user, new HashMap<>());
+                balanceSheet.putIfAbsent(expense.getPaidBy(), new HashMap<>());
+                balanceSheet.get(user).put(expense.getPaidBy(),
+                        balanceSheet.get(user).getOrDefault(expense.getPaidBy(), 0) + (expense.getAmount() / expense.getSplitAmong().size()));
+
+                balanceSheet.get(expense.getPaidBy()).put(user,
+                        balanceSheet.get(expense.getPaidBy()).getOrDefault(user, 0) - (expense.getAmount() / expense.getSplitAmong().size()));
+            }
         }
     }
-}
 
-// Handles balance calculations
-class BalanceService {
-    public double getTotalAmountOwedToUser(User user) {
-        return user.getBalances().values().stream().filter(amount -> amount > 0).mapToDouble(Double::doubleValue).sum();
-    }
-
-    public double getTotalAmountUserNeedsToPay(User user) {
-        return user.getBalances().values().stream().filter(amount -> amount < 0).mapToDouble(Double::doubleValue).sum();
+    public Map<String, Integer> getUserBalance(String userId) {
+        return balanceSheet.getOrDefault(userId, new HashMap<>());
     }
 }
 
-// Demo Usage
-class SplitwiseApp {
+class ExpenseManagerApp {
     public static void main(String[] args) {
-        AuthService authService = new AuthService();
+        UserService userService = new UserService();
         GroupService groupService = new GroupService();
         ExpenseService expenseService = new ExpenseService();
-        BalanceService balanceService = new BalanceService();
 
-        // Users
-        User alice = authService.login("alice@example.com", "Alice");
-        User bob = authService.login("bob@example.com", "Bob");
-        User charlie = authService.login("charlie@example.com", "Charlie");
+        userService.registerUser("alice@example.com", "Alice");
+        userService.registerUser("bob@example.com", "Bob");
 
-        // Group Creation
-        Group tripGroup = groupService.createGroup("grp-123", "Goa Trip");
-        groupService.addUserToGroup("grp-123", alice);
-        groupService.addUserToGroup("grp-123", bob);
-        groupService.addUserToGroup("grp-123", charlie);
+        groupService.createGroup("g1", "Friends");
 
-        // Adding an Expense (Alice paid $150, split equally among 3 users)
-        Map<User, Double> split = new HashMap<>();
-        split.put(alice, 50.0);
-        split.put(bob, 50.0);
-        split.put(charlie, 50.0);
+        groupService.addUserToGroup("g1", "alice@example.com");
+        groupService.addUserToGroup("g1", "bob@example.com");
 
-        expenseService.addExpense(tripGroup, alice, 150.0, split);
+        Expense expense = new Expense(100, "Dinner", "alice@example.com", Arrays.asList("alice@example.com", "bob@example.com"));
+        expenseService.addExpense("g1", expense);
 
-        // Check balances
-        System.out.println("Alice needs to be paid: " + balanceService.getTotalAmountOwedToUser(alice));
-        System.out.println("Bob needs to pay: " + balanceService.getTotalAmountUserNeedsToPay(bob));
-        System.out.println("Charlie needs to pay: " + balanceService.getTotalAmountUserNeedsToPay(charlie));
+        System.out.println("Balance for Bob: " + expenseService.getUserBalance("bob@example.com"));
     }
 }
