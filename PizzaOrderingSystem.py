@@ -8,27 +8,41 @@ Order management system - map<order, user>, addPizzaToOrder, removePizzaFromOrde
 '''
 
 from collections import defaultdict
+from datetime import datetime, timedelta
+from enum import Enum
 import uuid
 
+class PaymentType(Enum):
+    CREDIT = "credit"
+    DEBIT = "debit"
+    APPLE_PAY = "apple_pay"
 
 class Pizza:
+    BASE_PRICE = 10
+    SAUCE_PRICE = 2
+    TOPPING_PRICE = 1
+
     def __init__(self, name):
         self.name = name
-        self.toppings = 0
-        self.price = 0
+        self._toppings = set()
+
+    def addToppings(self, topping):
+        if not isinstance(topping, str):
+            raise ValueError("Topping must be a string")
+        self._toppings.add(topping)
+
+    def removeToppings(self, topping):
+        self._toppings.discard(topping)
 
     def getPrice(self):
-        totalPrice = 0
-        basePrice = 10
-        saucePrice = 2
-        toppingPrice = 1
-        totalPrice+=(basePrice+saucePrice+(toppingPrice*self.toppings))
-        print(f"{self.name} Pizza price is {totalPrice}")
-        return totalPrice
+        total = self.BASE_PRICE + self.SAUCE_PRICE + (len(self._toppings) * self.TOPPING_PRICE)
+        return total
+    
+class PepperoniPizza(Pizza):
+    PREMIUM_MULTIPLIER = 1.5
 
-class PepporoniPizza(Pizza):
     def getPrice(self):
-        self.price * 1.5
+        return super().getPrice() * self.PREMIUM_MULTIPLIER 
 
 class User:
     def __init__(self, name, userId, emailId):
@@ -37,6 +51,8 @@ class User:
         self.emailId = emailId
 
 class Order:
+    PREP_TIME_PER_PIZZA = 10
+
     def __init__(self, orderId, userId):
         self.orderId = orderId
         self.userId = userId
@@ -61,20 +77,45 @@ class Order:
             return totalPrice
         else:
             print("Price is 0, ntng in the cart")
+            return 0
+    
+    def getEstimatedTime(self):
+        total_pizzas = sum(self.pizzas.values())
+        minutes=self.PREP_TIME_PER_PIZZA *total_pizzas 
+        print(f"Preparing your Order...... Order will be ready in {minutes} minutes")
+        return minutes
 
 class OrderManagementSystem:
     def __init__(self):
         self.orderUserMap = {}
 
     def createOrderForUser(self, user, pizza):
-        if user in self.orderUserMap:
-            order = self.orderUserMap[user]
-        else:
+        if user not in self.orderUserMap:
             orderId = self.generateUniqueOrderId()
-            order = Order(orderId, user.userId)
-            self.orderUserMap[user]=order
-        order.addPizzaToOrder(pizza)
-        print(f"Order created and {pizza.name} pizza added to the order")
+            self.orderUserMap[user] = Order(orderId, user.userId)
+        self.orderUserMap[user].addPizzaToOrder(pizza)
+        return self.orderUserMap[user].orderId
+    
+    def addPizzaToOrder(self, user, pizza):
+        if user not in self.orderUserMap:
+            raise ValueError("No existing order for user")
+        self.orderUserMap[user].addPizzaToOrder(pizza)
+
+    def removePizzaFromOrder(self, user, pizza):
+        if user not in self.orderUserMap:
+            raise ValueError("No existing order for user")
+        self.orderUserMap[user].removePizzaFromOrder(pizza)
+
+    def placeAnOrder(self, user):
+        if user not in self.orderUserMap:
+            raise ValueError("No order to place")
+        order = self.orderUserMap[user]
+        total_price = order.getTotalPriceOfOrder()
+        estimated_time = order.getEstimatedTime()
+        print(f"Order {order.orderId} placed for {user.name}: ${total_price:.2f}, "
+              f"Estimated delivery in : {estimated_time} minutes")
+        del self.orderUserMap[user]  # Clear order after placement
+        return order.orderId
 
     def getTotalPriceForCheckout(self, user):
         if user not in self.orderUserMap:
@@ -91,22 +132,24 @@ class OrderManagementSystem:
 class PizzaOrderDemo:
     @staticmethod
     def run():
-        pizza1 = Pizza("mexican wave")
-        pizza2 = Pizza("double cheese")
-        pizza3 = Pizza("pepporoni")
-        pizza4 = Pizza("jalapeno chicken")
-        pizza5 = Pizza("Hawaiian")
+        pizza1 = Pizza("Mexican Wave")
+        pizza1.addToppings("jalapenos")
+        pizza2 = Pizza("Double Cheese")
+        pizza3 = PepperoniPizza("Pepperoni")
 
         user1 = User("kavya", 123, "kay@gmail.com")
         user2 = User("arvind",345, "arvi@gmail,com")
 
         orderManager = OrderManagementSystem()
         orderManager.createOrderForUser(user1, pizza1)
+        orderManager.addPizzaToOrder(user1, pizza3)
+        print(f"User 1 checkout price: ${orderManager.getTotalPriceForCheckout(user1):.2f}")
+        orderManager.placeAnOrder(user1)
+
+        # User 2 orders
         orderManager.createOrderForUser(user2, pizza2)
-        orderManager.createOrderForUser(user1, pizza3)
-        
-        orderManager.getTotalPriceForCheckout(user1)
-        orderManager.getTotalPriceForCheckout(user2)
+        print(f"User 2 checkout price: ${orderManager.getTotalPriceForCheckout(user2):.2f}")
+        orderManager.placeAnOrder(user2)
 
 if __name__=="__main__":
     PizzaOrderDemo.run()
