@@ -45,10 +45,23 @@ class PepperoniPizza(Pizza):
         return super().getPrice() * self.PREMIUM_MULTIPLIER 
 
 class User:
-    def __init__(self, name, userId, emailId):
-        self.name = name
-        self.userId = userId
-        self.emailId = emailId
+    def __init__(self, name, userId, email, payment_type=PaymentType.CREDIT):
+        self._name = name
+        self._userId = userId
+        self._email = email
+        self._payment_type = payment_type if isinstance(payment_type, PaymentType) else PaymentType.CREDIT
+
+    def get_name(self):
+        return self._name
+
+    def get_userId(self):
+        return self._userId
+
+    def get_email(self):
+        return self._email
+
+    def get_payment_type(self):
+        return self._payment_type
 
 class Order:
     PREP_TIME_PER_PIZZA = 10
@@ -92,7 +105,7 @@ class OrderManagementSystem:
     def createOrderForUser(self, user, pizza):
         if user not in self.orderUserMap:
             orderId = self.generateUniqueOrderId()
-            self.orderUserMap[user] = Order(orderId, user.userId)
+            self.orderUserMap[user] = Order(orderId, user.get_userId())
         self.orderUserMap[user].addPizzaToOrder(pizza)
         return self.orderUserMap[user].orderId
     
@@ -112,7 +125,7 @@ class OrderManagementSystem:
         order = self.orderUserMap[user]
         total_price = order.getTotalPriceOfOrder()
         estimated_time = order.getEstimatedTime()
-        print(f"Order {order.orderId} placed for {user.name}: ${total_price:.2f}, "
+        print(f"Order {order.orderId} placed for {user.get_name()}: ${total_price:.2f}, "
               f"Estimated delivery in : {estimated_time} minutes")
         del self.orderUserMap[user]  # Clear order after placement
         return order.orderId
@@ -123,7 +136,7 @@ class OrderManagementSystem:
         else:
             order = self.orderUserMap[user]
             totalPrice = order.getTotalPriceOfOrder()
-            print(f"total price of order is {totalPrice} , placed by User {user.name}")
+            print(f"total price of order is {totalPrice} , placed by User {user.get_name()}")
             return totalPrice
 
     def generateUniqueOrderId(self):
