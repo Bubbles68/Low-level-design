@@ -1,52 +1,40 @@
-'''
-Entities:
-File - name, extension, size
-Directory - list of files, size, addFile
-searchParameters - extension,maxSize, name
-FileSearcher 
-'''
-
-from abc import abstractmethod
-from typing import List, Optional
-
-
 class File:
     def __init__(self, name, extension, size):
-        self.name=name
-        self.extension=extension
-        self.size=size
+        self.name = name
+        self.extension = extension
+        self.size = size
 
 class Directory:
     def __init__(self, name):
         self.name = name
         self.files = []
-        self.size = 0
+        self.subdirs = []
 
-    def addFile(self, file):
-        if file in self.files:
-            print(f"file with the name {file.name} exists. Do you want to replace?")
+    def add_file(self, file):
         self.files.append(file)
-        self.size += file.size
-
-    def getAllFiles(self):
-        return self.files
+    
+    def add_directory(self, dir):
+        self.subdirs.append(dir)
 
 class SearchParams:
-    def __init__(self, extension: Optional[str] = None, max_size: Optional[int] = None, name:Optional[str] = None):
+    def __init__(self, extension=None, max_size=None, name=None):
         self.extension = extension
         self.max_size = max_size
         self.name = name
 
 class FileSearcher:
     def search(self, directory, params):
-        allFiles = directory.getAllFiles()
-        matchingFiles = []
-        for file in allFiles:
-            if self.checkFilter(file, params):
-                matchingFiles.append(file)
-        return matchingFiles
+        matching_files = []
+        # Check current directory's files
+        for file in directory.files:
+            if self._matches(file, params):
+                matching_files.append(file)
+        # Recursively search subdirectories
+        for subdir in directory.subdirs:
+            matching_files.extend(self.search(subdir, params))
+        return matching_files
     
-    def checkFilter(self, file, params):
+    def _matches(self, file, params):
         if params.extension and file.extension != params.extension:
             return False
         if params.max_size and file.size > params.max_size:
@@ -54,26 +42,14 @@ class FileSearcher:
         if params.name and not file.name.startswith(params.name):
             return False
         return True
-class Demo:
-    @staticmethod
-    def run():
-        file1 = File("System Design Intro", "pdf", 100)
-        file2 = File("code LLD intro", "pdf", 200)
-        file3 = File("code basics", "pdf", 50)
 
-        dir1 = Directory("Amazon prep")
-        dir1.addFile(file1)
-        dir1.addFile(file2)
-        dir1.addFile(file3)
-
-        dir1.getAllFiles()
-        params = SearchParams(extension="pdf", max_size=200, name = "co")
-        searcher = FileSearcher()
-        results = searcher.search(dir1, params)
-        if len(results)==0:
-            print(f"no files match the requirements")
-        for file in results:
-            print(file.name)
-
-if __name__=="__main__":
-    Demo.run()
+# Demo
+dir1 = Directory("root")
+dir1.add_file(File("test", "txt", 100))
+sub_dir = Directory("sub")
+sub_dir.add_file(File("code", "py", 50))
+dir1.add_directory(sub_dir)
+searcher = FileSearcher()
+results = searcher.search(dir1, SearchParams(extension="py"))
+for file in results:
+    print(file.name)  # Outputs: "code"
