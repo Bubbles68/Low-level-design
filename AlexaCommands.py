@@ -44,16 +44,18 @@ class Processor:
             if command is not None:
                 print(f"Command processed successfully : {command}")
         if command is None:
-            print("command didnt match")
+            print("Sorry, cant perform the action as command is incorrect")
 
 class Demo:
     def run():
         processor = Processor()
         input1 = "Turn on Fans"
         input2 = "Turn on Kitchen lights"
+        input3 = "yo turn on lights"
 
         processor.process(input1)
         processor.process(input2)
+        processor.process(input3)
 
 if __name__ == "__main__":
     Demo.run()
