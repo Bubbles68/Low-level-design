@@ -9,12 +9,13 @@ lockerDemo - to run all this
 import enum
 from tokenize import Double
 import uuid
+'''
 class Customer:
     def __init__(self, packageId:int, name:str, email:str, code:int):
         self.packageId =  packageId
         self.name = name
         self.email = email
-        self.code = code
+        self.code = code'''
 
 class Size(enum.Enum):
     SMALL = "S"
@@ -68,9 +69,12 @@ class Package:
 class LockerManagementSystem:
     def __init__(self, locationName, numberOfLockers):
         self.locationName=locationName
+        
         self.numberOfLockers = {Size.SMALL: numberOfLockers//3, Size.MEDIUM: numberOfLockers//3, Size.LARGE:numberOfLockers//3}
+
         self.lockers={}
         self.packagesInLockers={}
+
         for i in range(numberOfLockers//3):
             locker = Locker(Size.SMALL)
             self.lockers[locker.lockerId] = locker
@@ -78,7 +82,7 @@ class LockerManagementSystem:
             locker = Locker(Size.MEDIUM)
             self.lockers[locker.lockerId] = locker
         for k in range(numberOfLockers//3):
-            locker = Locker(Size.MEDIUM)
+            locker = Locker(Size.LARGE)
             self.lockers[locker.lockerId] = locker
 
     def assignPackageToLocker(self, package):
