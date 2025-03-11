@@ -50,7 +50,7 @@ class Evaluator:
                 operation = self.operatorRegistry.getOperator(presign)  
                 if operation:
                     if presign in "+-":
-                        stack.append(operation.apply(0, num))  # Using 0 to simulate unary addition/subtraction
+                        stack.append(operation.apply(0, num))
                     else:
                         stack.append(operation.apply(stack.pop(), num))
                 presign = char
@@ -60,4 +60,4 @@ class Evaluator:
 if __name__ == "__main__":
     registry = OperatorRegistry()
     calculator = Evaluator(registry)
-    print(calculator.calculate("3+5*2-8/4"))
+    print(calculator.calculate("3+5"))
