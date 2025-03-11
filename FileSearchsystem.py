@@ -1,3 +1,12 @@
+
+'''
+Entities:
+File - name, extension, size
+Directory - list of files, size, addFile
+searchParameters - extension,maxSize, name
+FileSearcher 
+'''
+
 from typing import List, Optional
 
 class File:
