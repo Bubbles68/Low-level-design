@@ -27,7 +27,10 @@ class Division(Operator):
     
 class OperatorRegistry:
     def __init__(self):
-        self.operators = {}
+        self.operators = {'+': Addition(),
+            '-': Subtraction(),
+            '*': Multiplication(),
+            '/': Division()}
 
     def registerNewOperator(self, symbol:str, operator:Operator):
         self.operators[symbol]=operator
@@ -62,10 +65,6 @@ class Evaluator:
 if __name__ == "__main__":
     # Create an operator registry and register default operators
     registry = OperatorRegistry()
-    registry.registerNewOperator('+', Addition())
-    registry.registerNewOperator('-', Subtraction())
-    registry.registerNewOperator('*', Multiplication())
-    registry.registerNewOperator('/', Division())
 
     # Create the RPN calculator
     calculator = Evaluator(registry)
