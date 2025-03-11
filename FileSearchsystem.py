@@ -6,8 +6,7 @@ Directory - list of files, size, addFile
 searchParameters - extension,maxSize, name
 FileSearcher 
 '''
-
-from typing import List, Optional
+from typing import List, Optional, Callable
 
 class File:
     def __init__(self, name, extension, size):
@@ -39,29 +38,51 @@ class Directory:
             all_files.extend(sub_dir.getAllFiles())
         return all_files
 
-class SearchParams:
-    def __init__(self, extension: Optional[str] = None, max_size: Optional[int] = None, name: Optional[str] = None):
+# Abstract filter class
+class FileFilter:
+    def matches(self, file: 'File') -> bool:
+        raise NotImplementedError("Subclasses must implement matches()")
+
+# Concrete filter implementations
+class ExtensionFilter(FileFilter):
+    def __init__(self, extension: str):
         self.extension = extension
+
+    def matches(self, file: 'File') -> bool:
+        return file.extension == self.extension
+
+class MaxSizeFilter(FileFilter):
+    def __init__(self, max_size: int):
         self.max_size = max_size
-        self.name = name
+
+    def matches(self, file: 'File') -> bool:
+        return file.size <= self.max_size
+
+class NamePrefixFilter(FileFilter):
+    def __init__(self, prefix: str):
+        self.prefix = prefix
+
+    def matches(self, file: 'File') -> bool:
+        return file.name.startswith(self.prefix)
+
+# Composite filter to combine multiple criteria
+class CompositeFilter(FileFilter):
+    def __init__(self):
+        self.filters: List[FileFilter] = []
+
+    def add(self, filter: FileFilter) -> None:
+        self.filters.append(filter)
+
+    def matches(self, file: 'File') -> bool:
+        for filter in self.filters:
+            if not filter.matches(file):
+                return False
+        return True
 
 class FileSearcher:
-    def search(self, directory: 'Directory', params: 'SearchParams') -> List[File]:
+    def search(self, directory: 'Directory', filter: FileFilter) -> List[File]:
         all_files = directory.getAllFiles()
-        matching_files = []
-        for file in all_files:
-            if self.checkFilter(file, params):
-                matching_files.append(file)
-        return matching_files
-    
-    def checkFilter(self, file: 'File', params: 'SearchParams') -> bool:
-        if params.extension and file.extension != params.extension:
-            return False
-        if params.max_size and file.size > params.max_size:
-            return False
-        if params.name and not file.name.startswith(params.name):
-            return False
-        return True
+        return [file for file in all_files if filter.matches(file)]
 
 class Demo:
     @staticmethod
@@ -81,17 +102,31 @@ class Demo:
         dir1.addFile(file2)
         dir1.addDirectory(sub_dir)
 
+        # Create a composite filter
+        search_filter = CompositeFilter()
+        search_filter.add(ExtensionFilter("pdf"))
+        search_filter.add(MaxSizeFilter(200))
+        search_filter.add(NamePrefixFilter("co"))
+
         # Search
-        params = SearchParams(extension="pdf", max_size=200, name="co")
         searcher = FileSearcher()
-        results = searcher.search(dir1, params)
-        
+        results = searcher.search(dir1, search_filter)
+
         if not results:
             print("No files match the requirements")
         else:
             print(f"Matching files:")
             for file in results:
                 print(f"  {file}")
+
+        # Now let's try a different filter (e.g., files with size < 150)
+        new_filter = CompositeFilter()
+        new_filter.add(MaxSizeFilter(150))
+
+        print("\nFiles with size < 150:")
+        results = searcher.search(dir1, new_filter)
+        for file in results:
+            print(f"  {file}")
 
 if __name__ == "__main__":
     Demo.run()
