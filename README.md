@@ -14,6 +14,8 @@ Apply Patterns (Optional): Use interfaces or abstraction when flexibility is nee
 Iterate: Fix gaps (e.g., concurrency) as they’re spotted or asked.
 
 Total Time Breakdown
+
+
 5 min: Clarify requirements and sketch entities.
 
 10 min: Design core classes (no interfaces yet).
